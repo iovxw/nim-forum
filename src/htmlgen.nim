@@ -99,7 +99,7 @@ macro a*(e: expr): expr {.immediate.} =
   ## generates the HTML ``a`` element.
   let e = callsite()
   result = xmlCheckedTag(e, "a", "href charset type hreflang rel rev " &
-    "accesskey tabindex" & commonAttr)
+    "data-toggle accesskey tabindex" & commonAttr)
 
 macro acronym*(e: expr): expr {.immediate.} =
   ## generates the HTML ``acronym`` element.
@@ -150,7 +150,8 @@ macro br*(e: expr): expr {.immediate.} =
 macro button*(e: expr): expr {.immediate.} =
   ## generates the HTML ``button`` element.
   let e = callsite()
-  result = xmlCheckedTag(e, "button", "accesskey tabindex data-toggle data-target " &
+  result = xmlCheckedTag(e, "button", "accesskey tabindex " &
+    "data-toggle data-target data-dismiss aria-hidden " &
     "disabled name type value" & commonAttr)
 
 macro caption*(e: expr): expr {.immediate.} =

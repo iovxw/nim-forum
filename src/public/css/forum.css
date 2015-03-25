@@ -3,3 +3,12 @@
     width: 970px;
   }
 }
+
+.github-button {
+  cursor: pointer;
+  display: inline-block;
+  padding: 9px 12px 7px;
+  border: 1px solid #e7e7e7;
+  background-color: #fafafa;
+  box-shadow: inset 0 2px 0 rgba(0,0,0,0.05);
+}
