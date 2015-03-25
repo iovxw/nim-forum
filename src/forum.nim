@@ -17,6 +17,7 @@ import jester, asyncdispatch, htmlgen
 routes:
   get "/":
     resp html(
+      lang="cn",
       head(
         link(rel="stylesheet", href="./css/bootstrap.min.css"),
         link(rel="stylesheet", href="./css/forum.css")
@@ -25,7 +26,7 @@ routes:
         `div`(class="navbar navbar-default",
           `div`(class="container",
             `div`(class="navbar-header",
-              button(class="navbar-toggle collapsed",
+              button(class="navbar-toggle collapsed", `data-toggle`="collapse", `data-target`="#navbar-main",
                 span(class="sr-only", "Toggle navigation"),
                 span(class="icon-bar"),
                 span(class="icon-bar"),
@@ -33,10 +34,16 @@ routes:
               ),
               a(class="navbar-brand", href="#", "Nim Forum")
             ),
-            `div`(class="collapse navbar-collapse", id="bs-example-navbar-collapse-1",
-              ul(class="nav navbar-nav navbar-right",
+            `div`(class="collapse navbar-collapse", id="navbar-main",
+              ul(class="nav navbar-nav navbar-left",
                 li(class="active", a(href="#", "Home")),
                 li(a(href="#", "Link"))
+              ),
+              ul(class="nav navbar-form navbar-right",
+                `div`(class="btn-group",
+                  a(href="#", class="btn btn-primary", "注册"),
+                  a(href="#", class="btn btn-success", "登录")
+                )
               )
             )
           )
@@ -44,8 +51,9 @@ routes:
         `div`(class="container",
           a(href="http://nim-lang.org", "Hello World!")
         ),
-        script(`type`="text/javascript", src="http://cdn.bootcss.com/jquery/1.11.2/jquery.min.js"),
-        script(`type`="text/javascript", src="http://cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js")
+        script(`type`="text/javascript", src="./js/forum.js"),
+        script(`type`="text/javascript", src="//cdn.bootcss.com/jquery/1.11.2/jquery.min.js"),
+        script(`type`="text/javascript", src="//cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js")
       )
     )
 
