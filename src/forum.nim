@@ -12,8 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import jester, asyncdispatch, net, json
-from httpclient import getContent, HttpRequestError
+import jester, asyncdispatch, json
+from httpclient import get, newAsyncHttpClient, getContent, HttpRequestError
 import htmlgen
 
 routes:
@@ -81,20 +81,17 @@ routes:
   get "/oauth/github":
     var
       code = @"code"
-      clientID = "Your Github Client ID"
-      clientSecret = "Your Github Client Secret"
+      clientID = "7e34977a09b773585ca7"
+      clientSecret = "e633c112da1593c87fefbbd18c66aa02455d5424"
       url = "https://github.com/login/oauth/access_token" &
         "?client_id=" & clientID &
         "&client_secret=" & clientSecret &
         "&code=" & code
-      token: string
-      j: string
 
-    try:
-      token = getContent(url)
-      j = getContent("https://api.github.com/user?" & token)
-    except HttpRequestError:
+    let token = await(newAsyncHttpClient().get(url)).body
+    if token[0..11] != "access_token":
       halt(Http401)
+    let j = await(newAsyncHttpClient().get("https://api.github.com/user?" & token)).body
 
     echo(j)
     let userData = parseJson(j)
