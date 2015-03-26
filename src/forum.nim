@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import jester, asyncdispatch, json
-from httpclient import get, newAsyncHttpClient, getContent, HttpRequestError
+from httpclient import get, newAsyncHttpClient, HttpRequestError
 import htmlgen
 
 routes:
@@ -82,7 +82,7 @@ routes:
     var
       code = @"code"
       clientID = "7e34977a09b773585ca7"
-      clientSecret = "e633c112da1593c87fefbbd18c66aa02455d5424"
+      clientSecret = "321dd84072a92ab6bb988cb9bcfa88d4f9675c10"
       url = "https://github.com/login/oauth/access_token" &
         "?client_id=" & clientID &
         "&client_secret=" & clientSecret &
