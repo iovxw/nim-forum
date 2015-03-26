@@ -12,9 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import jester, asyncdispatch, json
+import jester, asyncdispatch, json, md5, times, os, strutils
 from httpclient import get, newAsyncHttpClient, HttpRequestError
 import htmlgen
+
+if not dirExists("session"): createDir("session")
 
 routes:
   get "/":
@@ -82,7 +84,7 @@ routes:
     var
       code = @"code"
       clientID = "7e34977a09b773585ca7"
-      clientSecret = "321dd84072a92ab6bb988cb9bcfa88d4f9675c10"
+      clientSecret = ""
       url = "https://github.com/login/oauth/access_token" &
         "?client_id=" & clientID &
         "&client_secret=" & clientSecret &
@@ -91,10 +93,28 @@ routes:
     let token = await(newAsyncHttpClient().get(url)).body
     if token[0..11] != "access_token":
       halt(Http401)
-    let j = await(newAsyncHttpClient().get("https://api.github.com/user?" & token)).body
 
-    echo(j)
-    let userData = parseJson(j)
-    resp "hi, " & userData["login"].str
+    let
+      j = await(newAsyncHttpClient().get(
+        "https://api.github.com/user?" & token)).body
+
+      userData = parseJson(j)
+      session = token.getMD5()
+      id = userData["login"].str
+      dir = "session"/session[0..1]
+      time = timeInfoToTime(getGMTime(getTime()) +
+        initInterval(days=90)).toSeconds()
+
+    resp "hi, " & userData["name"].str
+
+    setCookie("id", id, daysForward(90))
+    setCookie("session", session, daysForward(90))
+
+    if not dirExists(dir): createDir(dir)
+    writeFile(dir/session, id & " " & formatFloat(time))
+
+    let data = split(readFile(dir/session))
+    echo data[0]
+    echo parseFloat(data[1])
 
 runForever()
