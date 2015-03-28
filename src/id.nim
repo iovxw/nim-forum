@@ -78,10 +78,7 @@ intList['y']=34
 intList['z']=35
 
 proc addOne*(s: string): string =
-  if s[0] == 'z':
-    result = '0' & s
-  else:
-    result = s
+  result = s
   let rLen = result.len
 
   result[rLen-1] = chrList[intList[result[rLen-1]]+1]
@@ -89,6 +86,9 @@ proc addOne*(s: string): string =
   for i in countdown(rLen-1, 0):
     if result[i] == ' ':
       result[i] = '0'
-      result[i-1] = chrList[intList[result[i-1]]+1]
+      if i == 0:
+        result = '1' & result
+      else:
+        result[i-1] = chrList[intList[result[i-1]]+1]
     else:
       return
