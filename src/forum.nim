@@ -12,11 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import jester, asyncdispatch, json, md5, times, os, strutils
+import jester, asyncdispatch, json, md5, times, os, strutils, db_sqlite
 from httpclient import get, newAsyncHttpClient, HttpRequestError
 import htmlgen
 
+var db = open(connection="forum.db", user="forum",
+              password="",  database="forum")
+
+####### 初始化 #######
 if not dirExists("session"): createDir("session")
+if not fileExists("forum.db"):
+  db.exec(sql"""
+    create table if not exists topics(
+      id       char(8)      not null,
+      name     varchar(100) not null,
+      views    integer      not null,
+      modified timestamp    not null default (DATETIME('now'))
+    );""",
+  [])
+
 
 routes:
   get "/":
@@ -84,7 +98,7 @@ routes:
     var
       code = @"code"
       clientID = "7e34977a09b773585ca7"
-      clientSecret = ""
+      clientSecret = "321dd84072a92ab6bb988cb9bcfa88d4f9675c10"
       url = "https://github.com/login/oauth/access_token" &
         "?client_id=" & clientID &
         "&client_secret=" & clientSecret &
