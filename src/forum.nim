@@ -180,12 +180,12 @@ routes:
         "&code=" & code
 
     let token = await(newAsyncHttpClient().get(url)).body
-    if token[0..11] != "access_token":
-      halt(Http401)
+
+    if token[0..11] != "access_token": halt(Http401)
 
     let
       j = await(newAsyncHttpClient().get(
-        "https://api.github.com/user?" & token)).body
+          "https://api.github.com/user?" & token)).body
 
       userData = parseJson(j)
       session = token.getMD5()
