@@ -21,16 +21,39 @@ var db = open(connection="forum.db", user="forum",
 
 ####### 初始化 #######
 if not dirExists("session"): createDir("session")
-if not fileExists("forum.db"):
+if getFileSize("forum.db") == 0:
   db.exec(sql"""
-    create table if not exists topics(
+    create table if not exists topic(
       id       char(8)      not null,
       name     varchar(100) not null,
       views    integer      not null,
       modified timestamp    not null default (DATETIME('now'))
     );""",
   [])
-
+  db.exec(sql"""
+    create table if not exists post(
+      topic    char(8)       not null,
+      author   varchar(20)   not null,
+      content  varchar(1000) not null,
+      xx       integer       not null,
+      oo       integer       not null,
+      type     integer       not null,
+      creation timestamp     not null default (DATETIME('now'))
+    );""",
+  [])
+  db.exec(sql"""
+    create table if not exists tag(
+      topic char(8)     not null,
+      tag   varchar(20) not null
+    );""",
+  [])
+  db.exec(sql"""
+    create table if not exists user(
+      id          varchar(20)   not null,
+      name        varchar(20)   not null,
+      description varchar(1000) not null
+    );""",
+  [])
 
 routes:
   get "/":
