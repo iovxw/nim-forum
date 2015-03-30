@@ -55,6 +55,21 @@ if getFileSize("forum.db") == 0:
     );""",
   [])
 
+const 
+  http404Page = "HTTP/1.1 404 Not Found\n\n" &
+    html(lang="zh",
+      body(
+        p("404")
+      )
+    )
+
+  http401Page = "HTTP/1.1 401 Unauthorized\n\n" &
+    html(lang="zh",
+      body(
+        p("401")
+      )
+    )
+
 proc index(user = ""): string =
   var userBtn: string
   var loginBox = ""
@@ -172,7 +187,7 @@ proc githubOAuth(code: string): string =
   try:
     j = getContent("https://api.github.com/user?" & getContent(url))
   except:
-    result = "HTTP/1.1 401 XXX"
+    result = http401Page
     return
 
   let
@@ -234,9 +249,9 @@ proc handleRequest(s: TServer) =
       try:
         file = readFile(staticDir/s.path)
       except:
-        s.client.send("HTTP/1.1 404 XXX")
+        s.client.send(http404Page)
         break
-      
+
       s.client.send("HTTP/1.1 200 OK\n")
       s.client.send("\n")
       s.client.send(file)
