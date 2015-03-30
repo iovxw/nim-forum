@@ -182,7 +182,7 @@ proc githubOAuth(code: string): string =
     dir = "session"/session[0..1]
 
   result.add("HTTP/1.1 200 OK\n" &
-             "Content-Type: text/html")
+             "Content-Type: text/html\n")
   result.add(setCookie("id", id, path="/")&"\n")
   result.add(setCookie("session", session, daysForward(30), path="/")&"\n")
   result.add("\n")
@@ -198,7 +198,7 @@ proc handleRequest(s: TServer) =
     case s.path
     of "/":
       s.client.send("HTTP/1.1 200 OK\n" &
-                    "Content-Type: text/html")
+                    "Content-Type: text/html\n")
       let
         cookies = parseCookies(s.headers["Cookie"])
         id = cookies["id"]
@@ -218,13 +218,13 @@ proc handleRequest(s: TServer) =
             if parseFloat(data[1]) >= time:
               let newSession = randomStr()
               s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
-              s.client.send("\n\n")
+              s.client.send("\n")
 
               s.client.send(index(id))
               putSession(id, newSession)
               break
 
-      s.client.send("\n\n")
+      s.client.send("\n")
       s.client.send(index())
     of "/oauth/github":
       let code = parseUrlQuery(s.query)["code"]
