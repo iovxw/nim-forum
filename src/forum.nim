@@ -12,9 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import jester, asyncdispatch, json, md5, times, os, strutils, db_sqlite, math
-from httpclient import get, newAsyncHttpClient, HttpRequestError
-import htmlgen, id
+import sockets, httpserver, httpclient, threadpool, os, strtabs,
+  json, md5, times, strutils, db_sqlite, math, cookies
+import htmlgen
 
 var db = open(connection="forum.db", user="forum",
               password="",  database="forum")
@@ -94,7 +94,7 @@ proc index(user = ""): string =
               )
 
   return html(
-    lang="cn",
+    lang="zh",
     head(
       link(rel="stylesheet", href="./css/font-awesome.min.css"),
       link(rel="stylesheet", href="./css/bootstrap.min.css"),
@@ -141,66 +141,104 @@ proc randomStr(): string =
 
 proc putSession(id, session: string) =
   # 当前时间再加30天
-  let time = getTime().toSeconds() + 2592000
+  let time = getTime().toSeconds() + 30 * (60 * 60 * 24)
   let dir = "session"/session[0..1]
   if not dirExists(dir): createDir(dir)
   writeFile(dir/session, id & " " & formatFloat(time))
 
-routes:
-  get "/":
-    let
-      id = request.cookies["id"]
-      session = request.cookies["session"]
-    if session != "" and id != "":
-      let file = "session"/session[0..1]/session
-      if fileExists(file):
-        let data = split(readFile(file))
-        if data[0] == id:
-          removeFile(file) # 身份已确认，删除旧 session
-          let time = getTime().toSeconds()
-          # 检查 session 是否过期
-          if parseFloat(data[1]) >= time:
-            resp index(id)
+proc daysForward(days: int): TimeInfo =
+  var t = Time(int(getTime()) + days * (60 * 60 * 24))
+  return t.getGMTime()
 
-            let newSession = randomStr()
-            setCookie("id", id, daysForward(30))
-            setCookie("session", newSession, daysForward(30))
-            putSession(id, newSession)
-            return
+proc parseUrlQuery(query: string): StringTableRef =
+  result = newStringTable(modeCaseInsensitive)
+  let kvs = query.split('&')
+  for kv in kvs:
+    let buf = kv.split('=')
+    if buf.len == 2:
+      result[buf[0]] = buf[1]
 
-    resp index()
-  get "/oauth/github":
-    var
-      code = @"code"
-      clientID = "7e34977a09b773585ca7"
-      clientSecret = "321dd84072a92ab6bb988cb9bcfa88d4f9675c10"
-      url = "https://github.com/login/oauth/access_token" &
-        "?client_id=" & clientID &
-        "&client_secret=" & clientSecret &
-        "&code=" & code
+proc githubOAuth(code: string): string =
+  result = ""
+  var
+    clientID = "7e34977a09b773585ca7"
+    clientSecret = "7cd0e5b48a320d802025f3517ead795cd48c06f9"
+    url = "https://github.com/login/oauth/access_token" &
+      "?client_id=" & clientID &
+      "&client_secret=" & clientSecret &
+      "&code=" & code
+    j: string
 
-    let token = await(newAsyncHttpClient().get(url)).body
+  try:
+    j = getContent("https://api.github.com/user?" & getContent(url))
+  except:
+    result = "HTTP/1.1 401 XXX"
+    return
 
-    if token[0..11] != "access_token": halt(Http401)
+  let
+    userData = parseJson(j)
+    session = randomStr()
+    id = userData["login"].str
+    dir = "session"/session[0..1]
 
-    let
-      j = await(newAsyncHttpClient().get(
-          "https://api.github.com/user?" & token)).body
+  result.add("HTTP/1.1 200 OK\n" &
+             "Content-Type: text/html")
+  result.add(setCookie("id", id, path="/")&"\n")
+  result.add(setCookie("session", session, daysForward(30), path="/")&"\n")
+  result.add("\n")
 
-      userData = parseJson(j)
-      session = token.getMD5()
-      id = userData["login"].str
-      dir = "session"/session[0..1]
+  result.add("hi, " & userData["name"].str)
 
-    resp "hi, " & userData["name"].str
+  putSession(id, session)
+  
 
-    setCookie("id", id, daysForward(30))
-    setCookie("session", session, daysForward(30))
+proc handleRequest(s: TServer) =
+  echo(s.ip, " ", s.reqMethod, " ", s.path)
+  block routes:
+    case s.path
+    of "/":
+      s.client.send("HTTP/1.1 200 OK\n" &
+                    "Content-Type: text/html")
+      let
+        cookies = parseCookies(s.headers["Cookie"])
+        id = cookies["id"]
+        session = cookies["session"]
 
-    putSession(id, session)
+      if session != "" and id != "":
+        let file = "session"/session[0..1]/session
 
-    let data = split(readFile(dir/session))
-    echo data[0]
-    echo parseFloat(data[1])
+        if fileExists(file):
+          let data = split(readFile(file))
 
-runForever()
+          if data[0] == id:
+            removeFile(file) # 身份已确认，删除旧 session
+            let time = getTime().toSeconds()
+
+            # 检查 session 是否过期
+            if parseFloat(data[1]) >= time:
+              let newSession = randomStr()
+              s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
+              s.client.send("\n\n")
+
+              s.client.send(index(id))
+              putSession(id, newSession)
+              break
+
+      s.client.send("\n\n")
+      s.client.send(index())
+    of "/oauth/github":
+      let code = parseUrlQuery(s.query)["code"]
+      s.client.send(githubOAuth(s.path))
+    else:
+      # TODO: 静态文件处理
+      s.client.send("HTTP/1.1 404 XXX")
+
+  s.client.close()
+
+var s: TServer
+s.open(Port(5000))
+echo("httpserver running on port: ", s.port)
+while true:
+  s.next()
+  spawn handleRequest(s)
+s.close()
