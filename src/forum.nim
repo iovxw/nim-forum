@@ -227,7 +227,7 @@ proc handleRequest(s: TServer) =
       s.client.send(index())
     of "/oauth/github":
       let code = parseUrlQuery(s.query)["code"]
-      s.client.send(githubOAuth(s.path))
+      s.client.send(githubOAuth(code))
     else:
       let staticDir = "public"
       var file: string
