@@ -190,7 +190,6 @@ proc githubOAuth(code: string): string =
   result.add("hi, " & userData["name"].str)
 
   putSession(id, session)
-  
 
 proc handleRequest(s: TServer) =
   echo(s.ip, " ", s.reqMethod, " ", s.path)
@@ -230,8 +229,17 @@ proc handleRequest(s: TServer) =
       let code = parseUrlQuery(s.query)["code"]
       s.client.send(githubOAuth(s.path))
     else:
-      # TODO: 静态文件处理
-      s.client.send("HTTP/1.1 404 XXX")
+      let staticDir = "public"
+      var file: string
+      try:
+        file = readFile(staticDir/s.path)
+      except:
+        s.client.send("HTTP/1.1 404 XXX")
+        break
+      
+      s.client.send("HTTP/1.1 200 OK\n")
+      s.client.send("\n")
+      s.client.send(file)
 
   s.client.close()
 
