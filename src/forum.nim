@@ -16,6 +16,10 @@ import sockets, httpserver, httpclient, threadpool, os, strtabs,
   json, md5, times, strutils, db_sqlite, math, cookies
 import htmlgen
 
+const
+  clientID = "7e34977a09b773585ca7"
+  clientSecret = "7cd0e5b48a320d802025f3517ead795cd48c06f9"
+
 var db = open(connection="forum.db", user="forum",
               password="",  database="forum")
 
@@ -28,8 +32,7 @@ if getFileSize("forum.db") == 0:
       name     varchar(100) not null,
       views    integer      not null,
       modified timestamp    not null default (DATETIME('now'))
-    );""",
-  [])
+    );""")
   db.exec(sql"""
     create table if not exists post(
       topic    char(8)       not null,
@@ -39,21 +42,19 @@ if getFileSize("forum.db") == 0:
       oo       integer       not null,
       type     integer       not null,
       creation timestamp     not null default (DATETIME('now'))
-    );""",
-  [])
+    );""")
   db.exec(sql"""
     create table if not exists tag(
       topic char(8)     not null,
       tag   varchar(20) not null
-    );""",
-  [])
+    );""")
   db.exec(sql"""
     create table if not exists user(
       id          varchar(20)   not null,
       name        varchar(20)   not null,
+      avatar      varchar(100)  not null,
       description varchar(1000) not null
-    );""",
-  [])
+    );""")
 
 const 
   http404Page = "HTTP/1.1 404 Not Found\n\n" &
@@ -89,7 +90,7 @@ proc index(user = ""): string =
             h4(class="modal-title", "登录")
           ),
           `div`(class="modal-body",
-            a(href="https://github.com/login/oauth/authorize?client_id=7e34977a09b773585ca7&scope=user:email",
+            a(href="https://github.com/login/oauth/authorize?scope=user:email&client_id=" & clientID,
               class="github-button",
               img(alt="Github", src="./images/GitHub-Mark.png")
             )
@@ -191,8 +192,6 @@ proc parseUrlQuery(query: string): StringTableRef =
 
 proc githubOAuth(code: string): string =
   var
-    clientID = "7e34977a09b773585ca7"
-    clientSecret = "7cd0e5b48a320d802025f3517ead795cd48c06f9"
     url = "https://github.com/login/oauth/access_token" &
       "?client_id=" & clientID &
       "&client_secret=" & clientSecret &
@@ -209,6 +208,8 @@ proc githubOAuth(code: string): string =
     userData = parseJson(j)
     session = randomStr()
     id = userData["login"].str
+    name = userData["name"].str
+    avatar = userData["avatar_url"].str
 
   result = ("HTTP/1.1 200 OK\n" &
             "Content-Type: text/html\n")
@@ -216,9 +217,17 @@ proc githubOAuth(code: string): string =
   result.add(setCookie("session", session, daysForward(30), path="/")&"\n")
   result.add("\n")
 
-  result.add("hi, " & userData["name"].str)
+  result.add("hi, " & name)
 
   putSession(id, session)
+
+  let oldName = db.getValue(sql"SELECT name FROM user WHERE id=?", id)
+  if oldName == "":
+    # 用户不存在，新建用户
+    db.exec(sql"INSERT INTO user VALUES (?, ?, ?, ?)", id, name, avatar, "")
+  elif oldName != name:
+    # 更新用户昵称
+    db.exec(sql"UPDATE user SET name = ? WHERE id = ?", name, id)
 
 proc handleRequest(s: TServer) =
   echo(s.ip, " ", s.reqMethod, " ", s.path)
@@ -246,7 +255,7 @@ proc handleRequest(s: TServer) =
       let code = parseUrlQuery(s.query)["code"]
       s.client.send(githubOAuth(code))
     else:
-      let staticDir = "public"
+      const staticDir = "public"
       var file: string
       try:
         file = readFile(staticDir/s.path)
