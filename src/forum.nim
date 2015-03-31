@@ -250,13 +250,11 @@ proc handleRequest(s: TServer) =
       var file: string
       try:
         file = readFile(staticDir/s.path)
+        s.client.send("HTTP/1.1 200 OK\n")
+        s.client.send("\n")
+        s.client.send(file)
       except:
         s.client.send(http404Page)
-        break
-
-      s.client.send("HTTP/1.1 200 OK\n")
-      s.client.send("\n")
-      s.client.send(file)
 
   s.client.close()
 
