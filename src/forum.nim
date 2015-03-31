@@ -119,6 +119,14 @@ proc index(id = ""): string =
       )
     )
 
+  var pagination = a(href="", class="btn btn-success", "«") &
+                   a(href="", class="btn btn-primary", "1") &
+                   a(href="", class="btn btn-default", "2") &
+                   a(href="", class="btn btn-default", "3") &
+                   a(href="", class="btn btn-default", "4") &
+                   a(href="", class="btn btn-default", "5") &
+                   a(href="", class="btn btn-success", "»")
+
   return html(
     lang="zh",
     head(
@@ -155,7 +163,10 @@ proc index(id = ""): string =
       `div`(class="container",
         `div`(class="col-sm-8",
           `div`(class="list-group well well-sm",
-            topics
+            topics,
+            `div`(class="btn-group btn-group-justified",
+              pagination
+            )
           )
         ),
         `div`(class="col-sm-4",
@@ -188,7 +199,8 @@ proc index(id = ""): string =
               `div`(class="panel-body",
                 "Panel content"
               )
-            )
+            ),
+            a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题")
           )
         ),
       ),

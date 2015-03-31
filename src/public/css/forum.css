@@ -20,3 +20,15 @@
 .list-group-item {
   height: 85px;
 }
+
+#new {
+  margin-top: 20px;
+}
+
+#new:hover {
+  margin-top: 21px;
+}
+
+#new:active {
+  margin-top: 22px;
+}
