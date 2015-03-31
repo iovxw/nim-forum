@@ -114,10 +114,10 @@ proc index(id = ""): string =
   for i in 0..50:
     topics.add a(href="#", class="list-group-item",
       h4(class="list-group-item-heading", "一个简洁而又简单的论坛程序"),
-        p(class="list-group-item-text", 
-          "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"
-        )
+      p(class="list-group-item-text", 
+        "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"
       )
+    )
 
   return html(
     lang="zh",
