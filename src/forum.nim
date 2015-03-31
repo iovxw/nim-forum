@@ -71,10 +71,10 @@ const
       )
     )
 
-proc index(user = ""): string =
+proc index(id = ""): string =
   var userBtn: string
   var loginBox = ""
-  if user == "":
+  if id == "":
     userBtn = a(href="#login", class="btn btn-primary", `data-toggle`="modal",
                 i(class="fa fa-user-plus"), " 注册"
               ) &
@@ -102,8 +102,9 @@ proc index(user = ""): string =
       )
     )
   else:
-    userBtn = a(href="/u/"&user, class="btn btn-primary", `data-toggle`="modal",
-                i(class="fa fa-user"), " "&user
+    let name = db.getValue(sql"SELECT name FROM user WHERE id=?", id)
+    userBtn = a(href="/setting", class="btn btn-primary", `data-toggle`="modal",
+                i(class="fa fa-user"), " " & name
               ) &
               a(href="/logout", class="btn btn-success", `data-toggle`="modal",
                 i(class="fa fa-power-off"), " 退出"
