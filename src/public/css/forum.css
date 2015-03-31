@@ -16,3 +16,7 @@
 .btn {
   text-transform: none;
 }
+
+.list-group-item {
+  height: 85px;
+}

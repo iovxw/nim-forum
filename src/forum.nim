@@ -29,9 +29,9 @@ if getFileSize("forum.db") == 0:
   db.exec(sql"""
     create table if not exists topic(
       id       char(8)      not null,
-      name     varchar(100) not null,
-      views    integer      not null,
-      modified timestamp    not null default (DATETIME('now'))
+      title     varchar(20) not null,
+      preview  varchar(50)  not null,
+      views    integer      not null
     );""")
   db.exec(sql"""
     create table if not exists post(
@@ -110,6 +110,15 @@ proc index(id = ""): string =
                 i(class="fa fa-power-off"), " 退出"
               )
 
+  var topics = ""
+  for i in 0..50:
+    topics.add a(href="#", class="list-group-item",
+      h4(class="list-group-item-heading", "一个简洁而又简单的论坛程序"),
+        p(class="list-group-item-text", 
+          "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"
+        )
+      )
+
   return html(
     lang="zh",
     head(
@@ -144,7 +153,44 @@ proc index(id = ""): string =
       ),
       loginBox,
       `div`(class="container",
-        a(href="http://nim-lang.org", "Hello World!")
+        `div`(class="col-sm-8",
+          `div`(class="list-group well well-sm",
+            topics
+          )
+        ),
+        `div`(class="col-sm-4",
+          `div`(class="well well-sm",
+            `div`(class="panel panel-default",
+              `div`(class="panel-body",
+                "Panel content"
+              )
+            ),
+            `div`(class="panel panel-primary",
+              `div`(class="panel-heading",
+                h3(class="panel-title", "Panel primary")
+              ),
+              `div`(class="panel-body",
+                "Panel content"
+              )
+            ),
+            `div`(class="panel panel-success",
+              `div`(class="panel-heading",
+                h3(class="panel-title", "Panel success")
+              ),
+              `div`(class="panel-body",
+                "Panel content"
+              )
+            ),
+            `div`(class="panel panel-warning",
+              `div`(class="panel-heading",
+                h3(class="panel-title", "Panel warning")
+              ),
+              `div`(class="panel-body",
+                "Panel content"
+              )
+            )
+          )
+        ),
       ),
       script(`type`="text/javascript", src="./js/forum.js"),
       script(`type`="text/javascript", src="//cdn.bootcss.com/jquery/1.11.2/jquery.min.js"),
