@@ -190,7 +190,6 @@ proc parseUrlQuery(query: string): StringTableRef =
       result[buf[0]] = buf[1]
 
 proc githubOAuth(code: string): string =
-  result = ""
   var
     clientID = "7e34977a09b773585ca7"
     clientSecret = "7cd0e5b48a320d802025f3517ead795cd48c06f9"
@@ -211,8 +210,8 @@ proc githubOAuth(code: string): string =
     session = randomStr()
     id = userData["login"].str
 
-  result.add("HTTP/1.1 200 OK\n" &
-             "Content-Type: text/html\n")
+  result = ("HTTP/1.1 200 OK\n" &
+            "Content-Type: text/html\n")
   result.add(setCookie("id", id, path="/")&"\n")
   result.add(setCookie("session", session, daysForward(30), path="/")&"\n")
   result.add("\n")
@@ -240,10 +239,9 @@ proc handleRequest(s: TServer) =
 
         s.client.send(index(id))
         putSession(id, newSession)
-        break
-
-      s.client.send("\n")
-      s.client.send(index())
+      else:
+        s.client.send("\n")
+        s.client.send(index())
     of "/oauth/github":
       let code = parseUrlQuery(s.query)["code"]
       s.client.send(githubOAuth(code))
