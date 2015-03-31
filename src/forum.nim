@@ -29,7 +29,7 @@ if getFileSize("forum.db") == 0:
   db.exec(sql"""
     create table if not exists topic(
       id       char(8)      not null,
-      title     varchar(20) not null,
+      title    varchar(20)  not null,
       preview  varchar(50)  not null,
       views    integer      not null
     );""")
