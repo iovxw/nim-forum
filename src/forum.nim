@@ -156,10 +156,26 @@ proc randomStr(): string =
 
 proc putSession(id, session: string) =
   # 当前时间再加30天
-  let time = getTime().toSeconds() + 30 * (60 * 60 * 24)
+  let time = int(getTime()) + 30 * (60 * 60 * 24)
   let dir = "session"/session[0..1]
   if not dirExists(dir): createDir(dir)
-  writeFile(dir/session, id & " " & formatFloat(time))
+  writeFile(dir/session, id & " " & intToStr(time))
+
+proc checkSession(id, session: string): bool =
+  result = false
+  if session != "" and id != "":
+    let file = "session"/session[0..1]/session
+
+    if fileExists(file):
+      let data = split(readFile(file))
+
+      if data[0] == id:
+        removeFile(file) # 身份已确认，删除旧 session
+        let time = int(getTime())
+
+        # 检查 session 是否过期
+        if parseInt(data[1]) >= time:
+          result = true
 
 proc daysForward(days: int): TimeInfo =
   var t = Time(int(getTime()) + days * (60 * 60 * 24))
@@ -194,7 +210,6 @@ proc githubOAuth(code: string): string =
     userData = parseJson(j)
     session = randomStr()
     id = userData["login"].str
-    dir = "session"/session[0..1]
 
   result.add("HTTP/1.1 200 OK\n" &
              "Content-Type: text/html\n")
@@ -218,25 +233,14 @@ proc handleRequest(s: TServer) =
         id = cookies["id"]
         session = cookies["session"]
 
-      if session != "" and id != "":
-        let file = "session"/session[0..1]/session
+      if checkSession(id, session):
+        let newSession = randomStr()
+        s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
+        s.client.send("\n")
 
-        if fileExists(file):
-          let data = split(readFile(file))
-
-          if data[0] == id:
-            removeFile(file) # 身份已确认，删除旧 session
-            let time = getTime().toSeconds()
-
-            # 检查 session 是否过期
-            if parseFloat(data[1]) >= time:
-              let newSession = randomStr()
-              s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
-              s.client.send("\n")
-
-              s.client.send(index(id))
-              putSession(id, newSession)
-              break
+        s.client.send(index(id))
+        putSession(id, newSession)
+        break
 
       s.client.send("\n")
       s.client.send(index())
