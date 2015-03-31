@@ -163,6 +163,8 @@ proc putSession(id, session: string) =
   writeFile(dir/session, id & " " & intToStr(time))
 
 proc checkSession(id, session: string): bool =
+  ## 检查 session 是否有效
+  ## 如果有效则返回 true 并删除 session （同一个 session 不使用两次）
   result = false
   if session != "" and id != "":
     let file = "session"/session[0..1]/session
@@ -254,6 +256,15 @@ proc handleRequest(s: TServer) =
     of "/oauth/github":
       let code = parseUrlQuery(s.query)["code"]
       s.client.send(githubOAuth(code))
+    of "/logout":
+      let
+        cookies = parseCookies(s.headers["Cookie"])
+        id = cookies["id"]
+        session = cookies["session"]
+
+      discard checkSession(id, session)
+      s.client.send("HTTP/1.1 302 OK\n" &
+                    "Location: /")
     else:
       const staticDir = "public"
       var file: string
