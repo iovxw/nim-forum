@@ -116,6 +116,19 @@ proc loginBox(id: string): string =
           `div`(class="modal-footer",
             button(class="btn btn-block btn-danger", `data-dismiss`="modal", "取消")))))
 
+proc pageTmpl(t, b: string): string =
+  return html(lang="zh-CN",
+    head(
+      title(t),
+      link(rel="stylesheet", href="./css/font-awesome.min.css"),
+      link(rel="stylesheet", href="./css/bootstrap.min.css"),
+      link(rel="stylesheet", href="./css/forum.css")),
+    body(
+      b,
+      script(`type`="text/javascript", src="./js/forum.js"),
+      script(`type`="text/javascript", src="//cdn.bootcss.com/jquery/1.11.2/jquery.min.js"),
+      script(`type`="text/javascript", src="//cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js")))
+
 proc index(id = ""): string =
   var topics = ""
   for i in 0..50:
@@ -124,53 +137,41 @@ proc index(id = ""): string =
       p(class="list-group-item-text", 
         "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"))
 
-  var pagination = a(href="", class="btn btn-success", "«") &
-                   a(href="", class="btn btn-primary", "1") &
-                   a(href="", class="btn btn-default", "2") &
-                   a(href="", class="btn btn-default", "3") &
-                   a(href="", class="btn btn-default", "4") &
-                   a(href="", class="btn btn-default", "5") &
-                   a(href="", class="btn btn-success", "»")
+  var pagination = ul(class="pager",
+    li(class="previous disabled", a("← Older")),
+    li(class="next", a("Newer →")))
 
-  return html(lang="zh-CN",
-    head(
-      title("Nim Forum —— 首页"),
-      link(rel="stylesheet", href="./css/font-awesome.min.css"),
-      link(rel="stylesheet", href="./css/bootstrap.min.css"),
-      link(rel="stylesheet", href="./css/forum.css")),
-    body(
-      navBar(id),
-      loginBox(id),
-      `div`(class="container",
-        `div`(class="col-sm-8",
-          `div`(class="list-group well well-sm",
-            topics,
-            `div`(class="btn-group btn-group-justified",
-              pagination))),
-        `div`(class="col-sm-4",
+  let body = navBar(id) &
+    loginBox(id) &
+    `div`(class="container",
+      `div`(class="col-sm-8",
+        `div`(class="list-group well well-sm",
+          topics)),
+      `div`(class="col-sm-4",
+        `div`(class="well well-sm",
+          `div`(class="panel panel-default",
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-primary",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "Panel primary")),
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-success",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "Panel success")),
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-warning",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "Panel warning")),
+            `div`(class="panel-body",
+              "Panel content")),
+          a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题")),
           `div`(class="well well-sm",
-            `div`(class="panel panel-default",
-              `div`(class="panel-body",
-                "Panel content")),
-            `div`(class="panel panel-primary",
-              `div`(class="panel-heading",
-                h3(class="panel-title", "Panel primary")),
-              `div`(class="panel-body",
-                "Panel content")),
-            `div`(class="panel panel-success",
-              `div`(class="panel-heading",
-                h3(class="panel-title", "Panel success")),
-              `div`(class="panel-body",
-                "Panel content")),
-            `div`(class="panel panel-warning",
-              `div`(class="panel-heading",
-                h3(class="panel-title", "Panel warning")),
-              `div`(class="panel-body",
-                "Panel content")),
-            a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题"))),),
-      script(`type`="text/javascript", src="./js/forum.js"),
-      script(`type`="text/javascript", src="//cdn.bootcss.com/jquery/1.11.2/jquery.min.js"),
-      script(`type`="text/javascript", src="//cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js")))
+            pagination)))
+
+  return pageTmpl("Nim Forum —— 首页", body)
 
 proc randomStr(): string =
   # TODO: 更好的随机数

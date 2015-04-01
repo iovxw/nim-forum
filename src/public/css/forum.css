@@ -32,3 +32,7 @@
 #new:active {
   margin-top: 22px;
 }
+
+.well .pager {
+  margin: 0;
+}
