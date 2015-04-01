@@ -60,64 +60,69 @@ const
   http404Page = "HTTP/1.1 404 Not Found\n\n" &
     html(lang="zh",
       body(
-        p("404")
-      )
-    )
+        p("404")))
 
   http401Page = "HTTP/1.1 401 Unauthorized\n\n" &
     html(lang="zh",
       body(
-        p("401")
-      )
-    )
+        p("401")))
 
-proc index(id = ""): string =
+proc navBar(id: string): string =
   var userBtn: string
-  var loginBox = ""
   if id == "":
     userBtn = a(href="#login", class="btn btn-primary", `data-toggle`="modal",
-                i(class="fa fa-user-plus"), " 注册"
-              ) &
+                i(class="fa fa-user-plus"), " 注册") &
               a(href="#login", class="btn btn-success", `data-toggle`="modal",
-                i(class="fa fa-user"), " 登录"
-              )
+                i(class="fa fa-user"), " 登录")
+  else:
+    let name = db.getValue(sql"SELECT name FROM user WHERE id=?", id)
+    userBtn = a(href="/setting", class="btn btn-primary", `data-toggle`="modal",
+                i(class="fa fa-user"), " " & name) &
+              a(href="/logout", class="btn btn-success", `data-toggle`="modal",
+                i(class="fa fa-power-off"), " 退出")
 
-    loginBox = `div`(id="login", class="modal fade",
+  return `div`(class="navbar navbar-default",
+    `div`(class="container",
+      `div`(class="navbar-header",
+        button(class="navbar-toggle collapsed", `data-toggle`="collapse", `data-target`="#navbar-main",
+          span(class="sr-only", "Toggle navigation"),
+          span(class="icon-bar"),
+          span(class="icon-bar"),
+          span(class="icon-bar")),
+        a(class="navbar-brand", href="#", "Nim Forum")),
+      `div`(class="collapse navbar-collapse", id="navbar-main",
+        ul(class="nav navbar-nav navbar-left",
+          li(class="active", a(href="#", "Home")),
+          li(a(href="#", "Link"))
+        ),
+        ul(class="nav navbar-form navbar-right",
+          `div`(class="btn-group",
+            userBtn)))))
+
+proc loginBox(id: string): string =
+  if id == "":
+    return ""
+  else:
+    return `div`(id="login", class="modal fade",
       `div`(class="modal-dialog",
         `div`(class="modal-content",
           `div`(class="modal-header",
             button(class="close", `data-dismiss`="modal", `aria-hidden`="true", "x"),
-            h4(class="modal-title", "登录")
-          ),
+            h4(class="modal-title", "登录")),
           `div`(class="modal-body",
             a(href="https://github.com/login/oauth/authorize?scope=user:email&client_id=" & clientID,
               class="github-button",
-              img(alt="Github", src="./images/GitHub-Mark.png")
-            )
-          ),
+              img(alt="Github", src="./images/GitHub-Mark.png"))),
           `div`(class="modal-footer",
-            button(class="btn btn-block btn-danger", `data-dismiss`="modal", "取消")
-          )
-        )
-      )
-    )
-  else:
-    let name = db.getValue(sql"SELECT name FROM user WHERE id=?", id)
-    userBtn = a(href="/setting", class="btn btn-primary", `data-toggle`="modal",
-                i(class="fa fa-user"), " " & name
-              ) &
-              a(href="/logout", class="btn btn-success", `data-toggle`="modal",
-                i(class="fa fa-power-off"), " 退出"
-              )
+            button(class="btn btn-block btn-danger", `data-dismiss`="modal", "取消")))))
 
+proc index(id = ""): string =
   var topics = ""
   for i in 0..50:
     topics.add a(href="#", class="list-group-item",
       h4(class="list-group-item-heading", "一个简洁而又简单的论坛程序"),
       p(class="list-group-item-text", 
-        "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"
-      )
-    )
+        "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"))
 
   var pagination = a(href="", class="btn btn-success", "«") &
                    a(href="", class="btn btn-primary", "1") &
@@ -127,88 +132,45 @@ proc index(id = ""): string =
                    a(href="", class="btn btn-default", "5") &
                    a(href="", class="btn btn-success", "»")
 
-  return html(
-    lang="zh",
+  return html(lang="zh-CN",
     head(
+      title("Nim Forum —— 首页"),
       link(rel="stylesheet", href="./css/font-awesome.min.css"),
       link(rel="stylesheet", href="./css/bootstrap.min.css"),
-      link(rel="stylesheet", href="./css/forum.css")
-    ),
+      link(rel="stylesheet", href="./css/forum.css")),
     body(
-      `div`(class="navbar navbar-default",
-        `div`(class="container",
-          `div`(class="navbar-header",
-            button(class="navbar-toggle collapsed", `data-toggle`="collapse", `data-target`="#navbar-main",
-              span(class="sr-only", "Toggle navigation"),
-              span(class="icon-bar"),
-              span(class="icon-bar"),
-              span(class="icon-bar")
-            ),
-            a(class="navbar-brand", href="#", "Nim Forum")
-          ),
-          `div`(class="collapse navbar-collapse", id="navbar-main",
-            ul(class="nav navbar-nav navbar-left",
-              li(class="active", a(href="#", "Home")),
-              li(a(href="#", "Link"))
-            ),
-            ul(class="nav navbar-form navbar-right",
-              `div`(class="btn-group",
-                userBtn
-              )
-            )
-          )
-        )
-      ),
-      loginBox,
+      navBar(id),
+      loginBox(id),
       `div`(class="container",
         `div`(class="col-sm-8",
           `div`(class="list-group well well-sm",
             topics,
             `div`(class="btn-group btn-group-justified",
-              pagination
-            )
-          )
-        ),
+              pagination))),
         `div`(class="col-sm-4",
           `div`(class="well well-sm",
             `div`(class="panel panel-default",
               `div`(class="panel-body",
-                "Panel content"
-              )
-            ),
+                "Panel content")),
             `div`(class="panel panel-primary",
               `div`(class="panel-heading",
-                h3(class="panel-title", "Panel primary")
-              ),
+                h3(class="panel-title", "Panel primary")),
               `div`(class="panel-body",
-                "Panel content"
-              )
-            ),
+                "Panel content")),
             `div`(class="panel panel-success",
               `div`(class="panel-heading",
-                h3(class="panel-title", "Panel success")
-              ),
+                h3(class="panel-title", "Panel success")),
               `div`(class="panel-body",
-                "Panel content"
-              )
-            ),
+                "Panel content")),
             `div`(class="panel panel-warning",
               `div`(class="panel-heading",
-                h3(class="panel-title", "Panel warning")
-              ),
+                h3(class="panel-title", "Panel warning")),
               `div`(class="panel-body",
-                "Panel content"
-              )
-            ),
-            a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题")
-          )
-        ),
-      ),
+                "Panel content")),
+            a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题"))),),
       script(`type`="text/javascript", src="./js/forum.js"),
       script(`type`="text/javascript", src="//cdn.bootcss.com/jquery/1.11.2/jquery.min.js"),
-      script(`type`="text/javascript", src="//cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js")
-    )
-  )
+      script(`type`="text/javascript", src="//cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js")))
 
 proc randomStr(): string =
   # TODO: 更好的随机数
