@@ -101,8 +101,6 @@ proc navBar(id: string): string =
 
 proc loginBox(id: string): string =
   if id == "":
-    return ""
-  else:
     return `div`(id="login", class="modal fade",
       `div`(class="modal-dialog",
         `div`(class="modal-content",
@@ -115,6 +113,8 @@ proc loginBox(id: string): string =
               img(alt="Github", src="./images/GitHub-Mark.png"))),
           `div`(class="modal-footer",
             button(class="btn btn-block btn-danger", `data-dismiss`="modal", "取消")))))
+  else:
+    return ""
 
 proc pageTmpl(t, b: string): string =
   return html(lang="zh-CN",
@@ -137,7 +137,7 @@ proc index(id = ""): string =
       p(class="list-group-item-text", 
         "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"))
 
-  var pagination = ul(class="pager",
+  let pagination = ul(class="pager",
     li(class="previous disabled", a("← Newer")),
     li(class="next", a("Older →")))
 
@@ -172,6 +172,32 @@ proc index(id = ""): string =
             pagination)))
 
   return pageTmpl("Nim Forum —— 首页", body)
+
+proc newTopic(id: string): string =
+  let body = navBar(id) &
+    `div`(class="container",
+      `div`(class="col-sm-8",
+        `div`(class="list-group well well-sm",
+          input(class="form-control", placeholder="标题……"),
+          textarea(class="form-control", rows="15", cols="30"),
+          input(class="form-control input-sm", placeholder="标签，使用空格分割"),
+          `div`(class="btn-group btn-group-justified",
+            a(class="btn btn-default btn-sm", "预览"),
+            a(class="btn btn-warning btn-sm", "发布")))),
+      `div`(class="col-sm-4",
+        `div`(class="well well-sm",
+          `div`(class="panel panel-primary",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "发帖提示")),
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-success",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "社区规则")),
+            `div`(class="panel-body",
+              "Panel content")))))
+
+  return pageTmpl("新主题", body)
 
 proc randomStr(): string =
   # TODO: 更好的随机数
@@ -287,6 +313,23 @@ proc handleRequest(s: TServer) =
       discard checkSession(id, session)
       s.client.send("HTTP/1.1 302 OK\n" &
                     "Location: /")
+    of "/new":
+      let
+        cookies = parseCookies(s.headers["Cookie"])
+        id = cookies["id"]
+        session = cookies["session"]
+
+      if checkSession(id, session):
+        s.client.send("HTTP/1.1 200 OK\n" &
+                      "Content-Type: text/html\n")
+        let newSession = randomStr()
+        s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
+        s.client.send("\n")
+
+        s.client.send(newTopic(id))
+        putSession(id, newSession)
+      else:
+        s.client.send(http401Page)
     else:
       const staticDir = "public"
       var file: string

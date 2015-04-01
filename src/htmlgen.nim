@@ -308,8 +308,9 @@ macro img*(e: expr): expr {.immediate.} =
 macro input*(e: expr): expr {.immediate.} =
   ## generates the HTML ``input`` element.
   let e = callsite()
-  result = xmlCheckedTag(e, "input", "name type value checked maxlength src" &
-    " alt accept disabled readonly accesskey tabindex" & commonAttr, "", true)
+  result = xmlCheckedTag(e, "input", "name type value checked maxlength" &
+    " src alt accept disabled readonly accesskey tabindex" &
+    " placeholder" & commonAttr, "", true)
 
 macro ins*(e: expr): expr {.immediate.} =
   ## generates the HTML ``ins`` element.

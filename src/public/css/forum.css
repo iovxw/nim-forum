@@ -33,6 +33,15 @@
   margin-top: 22px;
 }
 
+.well input {
+  margin-bottom: 9px;
+}
+
+.well textarea {
+  max-width: 100%;
+  margin-bottom: 9px;
+}
+
 .well .pager {
   margin: 0;
 }
