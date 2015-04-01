@@ -138,8 +138,8 @@ proc index(id = ""): string =
         "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"))
 
   var pagination = ul(class="pager",
-    li(class="previous disabled", a("← Older")),
-    li(class="next", a("Newer →")))
+    li(class="previous disabled", a("← Newer")),
+    li(class="next", a("Older →")))
 
   let body = navBar(id) &
     loginBox(id) &
