@@ -89,7 +89,7 @@ proc navBar(id: string): string =
           span(class="icon-bar"),
           span(class="icon-bar"),
           span(class="icon-bar")),
-        a(class="navbar-brand", href="#", "Nim Forum")),
+        a(class="navbar-brand", href="/", "Nim Forum")),
       `div`(class="collapse navbar-collapse", id="navbar-main",
         ul(class="nav navbar-nav navbar-left",
           li(class="active", a(href="#", "Home")),
@@ -178,12 +178,15 @@ proc newTopic(id: string): string =
     `div`(class="container",
       `div`(class="col-sm-8",
         `div`(class="list-group well well-sm",
-          input(class="form-control", placeholder="标题……"),
-          textarea(class="form-control", rows="15", cols="30"),
-          input(class="form-control input-sm", placeholder="标签，使用空格分割"),
+          input(id="ttitle", class="form-control", onchange="c()",
+            onkeyup="c()", `type`="text", maxlength="20", placeholder="标题……"),
+          textarea(id="tbody", id="", class="form-control", onchange="c()",
+            onkeyup="c()", rows="15", cols="30"),
+          input(id="ttag", class="form-control input-sm", onchange="c()",
+            onkeyup="c()", placeholder="标签，使用空格分割"),
           `div`(class="btn-group btn-group-justified",
-            a(class="btn btn-default btn-sm", "预览"),
-            a(class="btn btn-warning btn-sm", "发布")))),
+            a(id="preview", class="btn btn-default btn-sm disabled", "预览"),
+            a(id="publish", class="btn btn-warning btn-sm disabled", "发布")))),
       `div`(class="col-sm-4",
         `div`(class="well well-sm",
           `div`(class="panel panel-primary",
@@ -263,7 +266,7 @@ proc githubOAuth(code: string): string =
 
   result = ("HTTP/1.1 200 OK\n" &
             "Content-Type: text/html\n")
-  result.add(setCookie("id", id, path="/")&"\n")
+  result.add(setCookie("id", id, daysForward(30), path="/")&"\n")
   result.add(setCookie("session", session, daysForward(30), path="/")&"\n")
   result.add("\n")
 
@@ -293,6 +296,7 @@ proc handleRequest(s: TServer) =
 
       if checkSession(id, session):
         let newSession = randomStr()
+        s.client.send(setCookie("id", id, daysForward(30), path="/")&"\n")
         s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
         s.client.send("\n")
 

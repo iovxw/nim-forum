@@ -310,7 +310,7 @@ macro input*(e: expr): expr {.immediate.} =
   let e = callsite()
   result = xmlCheckedTag(e, "input", "name type value checked maxlength" &
     " src alt accept disabled readonly accesskey tabindex" &
-    " placeholder" & commonAttr, "", true)
+    " placeholder onchange" & commonAttr, "", true)
 
 macro ins*(e: expr): expr {.immediate.} =
   ## generates the HTML ``ins`` element.
@@ -465,8 +465,8 @@ macro td*(e: expr): expr {.immediate.} =
 macro textarea*(e: expr): expr {.immediate.} =
   ## generates the HTML ``textarea`` element.
   let e = callsite()
-  result = xmlCheckedTag(e, "textarea", " name disabled readonly accesskey" &
-    " tabindex" & commonAttr, "rows cols", false)
+  result = xmlCheckedTag(e, "textarea", "id name disabled readonly accesskey" &
+    " tabindex onchange" & commonAttr, "rows cols", false)
 
 macro tfoot*(e: expr): expr {.immediate.} =
   ## generates the HTML ``tfoot`` element.
