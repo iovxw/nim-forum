@@ -45,3 +45,7 @@
 .well .pager {
   margin: 0;
 }
+
+.panel:last-child {
+  margin-bottom: 0;
+}
