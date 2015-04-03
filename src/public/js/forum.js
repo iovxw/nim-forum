@@ -31,3 +31,11 @@ function c() {
 		addClass(preBtn, "disabled")
 	}
 }
+
+function publish() {
+
+}
+
+function preview(){
+
+}
