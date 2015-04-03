@@ -14,7 +14,7 @@
 
 import sockets, httpserver, httpclient, threadpool, os, strtabs,
   json, md5, times, strutils, db_sqlite, math, cookies
-import htmlgen
+import htmlgen, id
 
 const
   clientID = "7e34977a09b773585ca7"
@@ -31,30 +31,30 @@ if getFileSize("forum.db") == 0:
       id       char(8)      not null,
       title    varchar(20)  not null,
       preview  varchar(50)  not null,
-      views    integer      not null
-    );""")
+      views    integer      not null default 0);""")
   db.exec(sql"""
     create table if not exists post(
       topic    char(8)       not null,
       author   varchar(20)   not null,
       content  varchar(1000) not null,
-      xx       integer       not null,
-      oo       integer       not null,
       type     integer       not null,
-      creation timestamp     not null default (DATETIME('now'))
-    );""")
+      xx       integer       not null default 0,
+      oo       integer       not null default 0,
+      creation timestamp     not null default (DATETIME('now')));""")
   db.exec(sql"""
     create table if not exists tag(
       topic char(8)     not null,
-      tag   varchar(20) not null
-    );""")
+      tag   varchar(20) not null);""")
   db.exec(sql"""
     create table if not exists user(
       id          varchar(20)   not null,
       name        varchar(20)   not null,
       avatar      varchar(100)  not null,
-      description varchar(1000) not null
-    );""")
+      description varchar(1000) not null  default '');""")
+  db.exec(sql"""
+    create table if not exists config(
+      lastTopic char(8) not null);""")
+  db.exec(sql"INSERT INTO config VALUES ('00000000')")
 
 const 
   http404Page = "HTTP/1.1 404 Not Found\n\n" &
@@ -185,8 +185,8 @@ proc newTopic(id: string): string =
           input(id="ttag", class="form-control input-sm", onchange="c()",
             onkeyup="c()", placeholder="标签，使用空格分割"),
           `div`(class="btn-group btn-group-justified",
-            a(id="preview", onclick="publish()", class="btn btn-default btn-sm disabled", "预览"),
-            a(id="publish", onclick="preview()", class="btn btn-warning btn-sm disabled", "发布")))),
+            a(id="preview", onclick="preview()", class="btn btn-default btn-sm disabled", "预览"),
+            a(id="publish", onclick="publish()", class="btn btn-warning btn-sm disabled", "发布")))),
       `div`(class="col-sm-4",
         `div`(class="well well-sm",
           `div`(class="panel panel-primary",
@@ -201,6 +201,44 @@ proc newTopic(id: string): string =
               "Panel content")))))
 
   return pageTmpl("新主题", body)
+
+proc newTopic(id, data: string): string =
+  try:
+    let
+      d = parseJson(data)
+      title = d["title"].str
+      body = d["body"].str
+      tags = split(d["tag"].str)
+    # 判断内容合法性
+    if title.len >= 5 and title.len <= 20 and tags.len > 0:
+      let
+        # 上一个主题的ID
+        lastTopic = db.getValue(sql"SELECT lastTopic FROM config")
+        topicID = lastTopic.addOne()
+      var preview: string
+
+      if body.len > 50:
+        preview = body[0..49]
+      else:
+        preview = body
+
+      db.exec(sql"""
+        INSERT INTO topic (id,      title, preview)
+        VALUES            (?,       ?,     ?)""",
+                           topicID, title, preview)
+      db.exec(sql"""
+        INSERT INTO post (topic,   author, content, type)
+        VALUES           (?,       ?,      ?,       ?)""",
+                          topicID, id,     body,    0)
+      for tag in tags:
+        db.exec(sql"INSERT INTO tag VALUES (?, ?)", topicID, tag)
+
+      db.exec(sql"UPDATE config SET lastTopic = ? WHERE lastTopic = ?", topicID, lastTopic)
+      return "DONE"
+    else:
+      return "LENGTH ERROR"
+  except:
+    return "PARSE ERROR"
 
 proc randomStr(): string =
   # TODO: 更好的随机数
@@ -329,9 +367,14 @@ proc handleRequest(s: TServer) =
         let newSession = randomStr()
         s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
         s.client.send("\n")
-
-        s.client.send(newTopic(id))
         putSession(id, newSession)
+
+        case s.reqMethod
+        of "GET":
+          s.client.send(newTopic(id))
+        of "POST":
+          s.client.send(newTopic(id, s.body))
+
       else:
         s.client.send(http401Page)
     else:

@@ -1,87 +1,91 @@
-import tables
+proc toChr(i: int8): char =
+  case i:
+  of 0: return '0'
+  of 1: return '1'
+  of 2: return '2'
+  of 3: return '3'
+  of 4: return '4'
+  of 5: return '5'
+  of 6: return '6'
+  of 7: return '7'
+  of 8: return '8'
+  of 9: return '9'
+  of 10: return 'a'
+  of 11: return 'b'
+  of 12: return 'c'
+  of 13: return 'd'
+  of 14: return 'e'
+  of 15: return 'f'
+  of 16: return 'g'
+  of 17: return 'h'
+  of 18: return 'i'
+  of 19: return 'j'
+  of 20: return 'k'
+  of 21: return 'l'
+  of 22: return 'm'
+  of 23: return 'n'
+  of 24: return 'o'
+  of 25: return 'p'
+  of 26: return 'q'
+  of 27: return 'r'
+  of 28: return 's'
+  of 29: return 't'
+  of 30: return 'u'
+  of 31: return 'v'
+  of 32: return 'w'
+  of 33: return 'x'
+  of 34: return 'y'
+  of 35: return 'z'
+  else: return ' '
 
-var chrList = initTable[int8, char]()
-chrList[0]='0'
-chrList[1]='1'
-chrList[2]='2'
-chrList[3]='3'
-chrList[4]='4'
-chrList[5]='5'
-chrList[6]='6'
-chrList[7]='7'
-chrList[8]='8'
-chrList[9]='9'
-chrList[10]='a'
-chrList[11]='b'
-chrList[12]='c'
-chrList[13]='d'
-chrList[14]='e'
-chrList[15]='f'
-chrList[16]='g'
-chrList[17]='h'
-chrList[18]='i'
-chrList[19]='j'
-chrList[20]='k'
-chrList[21]='l'
-chrList[22]='m'
-chrList[23]='n'
-chrList[24]='o'
-chrList[25]='p'
-chrList[26]='q'
-chrList[27]='r'
-chrList[28]='s'
-chrList[29]='t'
-chrList[30]='u'
-chrList[31]='v'
-chrList[32]='w'
-chrList[33]='x'
-chrList[34]='y'
-chrList[35]='z'
-chrList[36]=' '
+proc toInt(c: char): int8 =
+  case c:
+  of '0': return 0
+  of '1': return 1
+  of '2': return 2
+  of '3': return 3
+  of '4': return 4
+  of '5': return 5
+  of '6': return 6
+  of '7': return 7
+  of '8': return 8
+  of '9': return 9
+  of 'a': return 10
+  of 'b': return 11
+  of 'c': return 12
+  of 'd': return 13
+  of 'e': return 14
+  of 'f': return 15
+  of 'g': return 16
+  of 'h': return 17
+  of 'i': return 18
+  of 'j': return 19
+  of 'k': return 20
+  of 'l': return 21
+  of 'm': return 22
+  of 'n': return 23
+  of 'o': return 24
+  of 'p': return 25
+  of 'q': return 26
+  of 'r': return 27
+  of 's': return 28
+  of 't': return 29
+  of 'u': return 30
+  of 'v': return 31
+  of 'w': return 32
+  of 'x': return 33
+  of 'y': return 34
+  of 'z': return 35
+  else: return -1
 
-var intList = initTable[char, int8]()
-intList['0']=0
-intList['1']=1
-intList['2']=2
-intList['3']=3
-intList['4']=4
-intList['5']=5
-intList['6']=6
-intList['7']=7
-intList['8']=8
-intList['9']=9
-intList['a']=10
-intList['b']=11
-intList['c']=12
-intList['d']=13
-intList['e']=14
-intList['f']=15
-intList['g']=16
-intList['h']=17
-intList['i']=18
-intList['j']=19
-intList['k']=20
-intList['l']=21
-intList['m']=22
-intList['n']=23
-intList['o']=24
-intList['p']=25
-intList['q']=26
-intList['r']=27
-intList['s']=28
-intList['t']=29
-intList['u']=30
-intList['v']=31
-intList['w']=32
-intList['x']=33
-intList['y']=34
-intList['z']=35
+proc addOne(c: char): char =
+  return (c.toInt()+1).toChr()
 
 proc addOne*(s: string): string =
   result = s
   let rLen = result.len
 
-  result[rLen-1] = chrList[intList[result[rLen-1]]+1]
+  result[rLen-1] = result[rLen-1].addOne()
 
   for i in countdown(rLen-1, 0):
     if result[i] == ' ':
@@ -89,6 +93,6 @@ proc addOne*(s: string): string =
       if i == 0:
         result = '1' & result
       else:
-        result[i-1] = chrList[intList[result[i-1]]+1]
+        result[i-1] = result[i-1].addOne()
     else:
       return

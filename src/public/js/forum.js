@@ -19,7 +19,7 @@ function c() {
 	var pubBtn = document.getElementById("publish")
 	var preBtn = document.getElementById("preview")
 
-	if (title > 5 && tag > 0) {
+	if (title >= 5 && tag > 0) {
 		delClass(pubBtn, "disabled")
 	}else{
 		addClass(pubBtn, "disabled")
@@ -33,9 +33,53 @@ function c() {
 }
 
 function publish() {
+	var pubBtn = document.getElementById("publish")
+	addClass(pubBtn, "disabled")
+	pubBtn.text = "发布中……"
 
+	var title = document.getElementById("ttitle").value
+	var body = document.getElementById("tbody").value
+	var tag = document.getElementById("ttag").value
+	var data = JSON.stringify({
+		title: title,
+		body: body,
+		tag: tag
+	})
+
+	var http = new XMLHttpRequest()
+	http.open("POST", "/new", true)
+	http.onreadystatechange = function() {
+		if (http.readyState === 4) {
+			if (http.status === 200) {
+				alert("发布成功")
+				window.location.href = "/"
+			} else {
+				delClass(pubBtn, "disabled")
+				pubBtn.text = "发布失败"
+				setTimeout('document.getElementById("publish").text = "发布"', 2000)
+			}
+		}
+	}
+	http.send(data)
 }
 
 function preview(){
+	var preBtn = document.getElementById("preview")
+	addClass(preBtn, "disabled")
+	preBtn.text = "生成预览中……"
 
+	var http = new XMLHttpRequest()
+	http.open("POST", "/preview", true)
+	http.onreadystatechange = function() {
+		if (http.readyState === 4) {
+			if (http.status === 200) {
+				//...
+			} else {
+				delClass(preBtn, "disabled")
+				preBtn.text = "预览失败"
+				setTimeout('document.getElementById("preview").text = "预览"', 2000)
+			}
+		}
+	}
+	http.send(document.getElementById("tbody").value)
 }
