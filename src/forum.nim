@@ -14,7 +14,7 @@
 
 import sockets, httpserver, httpclient, threadpool, os, strtabs,
   json, md5, times, strutils, db_sqlite, math, cookies
-import htmlgen, id
+import htmlgen, strplus
 
 const
   clientID = "7e34977a09b773585ca7"
@@ -23,7 +23,7 @@ const
 var db = open(connection="forum.db", user="forum",
               password="",  database="forum")
 
-####### 初始化 #######
+# ###### 第一次运行初始化 ###### #
 if not dirExists("session"): createDir("session")
 if getFileSize("forum.db") == 0:
   db.exec(sql"""
@@ -240,16 +240,22 @@ proc newTopic(id, data: string): string =
   except:
     return "PARSE ERROR"
 
-proc randomStr(): string =
-  # TODO: 更好的随机数
-  return getMD5(intToStr(random(1000000)) & $getTime())
+proc toDay(days: int): int =
+  return int(getTime()) + days * (60 * 60 * 24)
 
-proc putSession(id, session: string) =
-  # 当前时间再加30天
-  let time = int(getTime()) + 30 * (60 * 60 * 24)
+proc daysForward(days: int): TimeInfo =
+  return Time(days.toDay()).getGMTime()
+
+proc updataSession(id: string): string =
+  let session = randomStr(32)
+
+  let time = 30.toDay()
   let dir = "session"/session[0..1]
   if not dirExists(dir): createDir(dir)
   writeFile(dir/session, id & " " & intToStr(time))
+
+  result = setCookie("id", id, daysForward(30), path="/")&"\n"
+  result.add setCookie("session", session, daysForward(30), path="/")&"\n"
 
 proc checkSession(id, session: string): bool =
   ## 检查 session 是否有效
@@ -268,10 +274,6 @@ proc checkSession(id, session: string): bool =
         # 检查 session 是否过期
         if parseInt(data[1]) >= time:
           result = true
-
-proc daysForward(days: int): TimeInfo =
-  var t = Time(int(getTime()) + days * (60 * 60 * 24))
-  return t.getGMTime()
 
 proc parseUrlQuery(query: string): StringTableRef =
   result = newStringTable(modeCaseInsensitive)
@@ -297,20 +299,16 @@ proc githubOAuth(code: string): string =
 
   let
     userData = parseJson(j)
-    session = randomStr()
     id = userData["login"].str
     name = userData["name"].str
     avatar = userData["avatar_url"].str
 
   result = ("HTTP/1.1 200 OK\n" &
             "Content-Type: text/html\n")
-  result.add(setCookie("id", id, daysForward(30), path="/")&"\n")
-  result.add(setCookie("session", session, daysForward(30), path="/")&"\n")
+  result.add(updataSession(id))
   result.add("\n")
 
   result.add("hi, " & name)
-
-  putSession(id, session)
 
   let oldName = db.getValue(sql"SELECT name FROM user WHERE id=?", id)
   if oldName == "":
@@ -333,13 +331,10 @@ proc handleRequest(s: TServer) =
         session = cookies["session"]
 
       if checkSession(id, session):
-        let newSession = randomStr()
-        s.client.send(setCookie("id", id, daysForward(30), path="/")&"\n")
-        s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
+        s.client.send(updataSession(id))
         s.client.send("\n")
 
         s.client.send(index(id))
-        putSession(id, newSession)
       else:
         s.client.send("\n")
         s.client.send(index())
@@ -364,10 +359,8 @@ proc handleRequest(s: TServer) =
       if checkSession(id, session):
         s.client.send("HTTP/1.1 200 OK\n" &
                       "Content-Type: text/html\n")
-        let newSession = randomStr()
-        s.client.send(setCookie("session", newSession, daysForward(30), path="/")&"\n")
+        s.client.send(updataSession(id))
         s.client.send("\n")
-        putSession(id, newSession)
 
         case s.reqMethod
         of "GET":

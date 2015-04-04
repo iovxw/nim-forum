@@ -1,3 +1,7 @@
+import math
+
+randomize()
+
 proc toChr(i: int8): char =
   case i:
   of 0: return '0'
@@ -96,3 +100,8 @@ proc addOne*(s: string): string =
         result[i-1] = result[i-1].addOne()
     else:
       return
+
+proc randomStr*(length: int): string =
+  result = newString(length)
+  for i in 0..length-1:
+    result[i] = int8(random(36)).toChr()
