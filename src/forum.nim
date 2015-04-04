@@ -242,7 +242,7 @@ proc newTopic(id, data: string): string =
 
 proc randomStr(): string =
   # TODO: 更好的随机数
-  return getMD5(intToStr(random(1000000)))
+  return getMD5(intToStr(random(1000000)) & $getTime())
 
 proc putSession(id, session: string) =
   # 当前时间再加30天
