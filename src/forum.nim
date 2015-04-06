@@ -132,11 +132,12 @@ proc pageTmpl(t, b: string): string =
 
 proc index(id = ""): string =
   var topics = ""
-  let t = db.getAllRows(sql"SELECT title, preview FROM topic ORDER BY modified DESC")
+  let t = db.getAllRows(sql"SELECT id, title, preview FROM topic ORDER BY modified DESC")
   for topic in t:
-    let title = topic[0]
-    let preview = topic[1]
-    topics.add a(href="#", class="list-group-item",
+    let id = topic[0]
+    let title = topic[1]
+    let preview = topic[2]
+    topics.add a(href="/"&id, class="list-group-item",
       h4(class="list-group-item-heading", title),
       p(class="list-group-item-text", 
         preview))
