@@ -31,7 +31,8 @@ if getFileSize("forum.db") == 0:
       id       char(8)      not null,
       title    varchar(20)  not null,
       preview  varchar(50)  not null,
-      views    integer      not null default 0);""")
+      views    integer      not null default 0),
+      modified timestamp    not null default (DATETIME('now'));""")
   db.exec(sql"""
     create table if not exists post(
       topic    char(8)       not null,
