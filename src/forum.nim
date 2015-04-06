@@ -31,8 +31,8 @@ if getFileSize("forum.db") == 0:
       id       char(8)      not null,
       title    varchar(20)  not null,
       preview  varchar(50)  not null,
-      views    integer      not null default 0),
-      modified timestamp    not null default (DATETIME('now'));""")
+      views    integer      not null default 0,
+      modified timestamp    not null default (DATETIME('now')));""")
   db.exec(sql"""
     create table if not exists post(
       topic    char(8)       not null,
@@ -132,11 +132,14 @@ proc pageTmpl(t, b: string): string =
 
 proc index(id = ""): string =
   var topics = ""
-  for i in 0..50:
+  let t = db.getAllRows(sql"SELECT title, preview FROM topic ORDER BY modified DESC")
+  for topic in t:
+    let title = topic[0]
+    let preview = topic[1]
     topics.add a(href="#", class="list-group-item",
-      h4(class="list-group-item-heading", "一个简洁而又简单的论坛程序"),
+      h4(class="list-group-item-heading", title),
       p(class="list-group-item-text", 
-        "这里显示帖子内容的预览。为了只关注信息所以不显示发帖人发帖时间发帖人头像最后回复时间等等……"))
+        preview))
 
   let pagination = ul(class="pager",
     li(class="previous disabled", a("← Newer")),
