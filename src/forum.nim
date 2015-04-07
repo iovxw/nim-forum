@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import sockets, httpserver, httpclient, threadpool, os, strtabs,
-  json, md5, times, strutils, db_sqlite, math, cookies,
+  json, md5, times, strutils, db_sqlite, math, cookies, re,
   packages/docutils/rstgen
 import htmlgen, strplus
 
@@ -249,6 +249,11 @@ proc newTopic(id, data: string): string =
   except:
     return "PARSE ERROR"
 
+proc getTopic(userID, topicID): string =
+  let topic = db.getRow(sql"SELECT * FROM post WHERE type = 0")
+  # TODO: 完成主题内容页。post 的 type 0代表帖子主题，1代表附言，2代表回复
+  return pageTmpl("", "body")
+
 proc toDay(days: int): int =
   return int(getTime()) + days * (60 * 60 * 24)
 
@@ -329,57 +334,61 @@ proc githubOAuth(code: string): string =
 
 proc handleRequest(s: TServer) =
   echo(s.ip, " ", s.reqMethod, " ", s.path)
-  block routes:
-    case s.path
-    of "/":
+  let
+    cookies = parseCookies(s.headers["Cookie"])
+    id = cookies["id"]
+    session = cookies["session"]
+  case s.path
+  of "/":
+    s.client.send("HTTP/1.1 200 OK\n" &
+                  "Content-Type: text/html\n")
+    if checkSession(id, session):
+      s.client.send(updataSession(id))
+      s.client.send("\n")
+
+      s.client.send(index(id))
+    else:
+      s.client.send("\n")
+      s.client.send(index())
+  of "/oauth/github":
+    let code = parseUrlQuery(s.query)["code"]
+    s.client.send(githubOAuth(code))
+  of "/logout":
+    discard checkSession(id, session)
+    s.client.send("HTTP/1.1 302 OK\n" &
+                  "Location: /")
+  of "/new":
+    if checkSession(id, session):
       s.client.send("HTTP/1.1 200 OK\n" &
                     "Content-Type: text/html\n")
-      let
-        cookies = parseCookies(s.headers["Cookie"])
-        id = cookies["id"]
-        session = cookies["session"]
+      s.client.send(updataSession(id))
+      s.client.send("\n")
 
-      if checkSession(id, session):
-        s.client.send(updataSession(id))
-        s.client.send("\n")
+      case s.reqMethod
+      of "GET":
+        s.client.send(newTopic(id))
+      of "POST":
+        s.client.send(newTopic(id, s.body))
+      else: discard
 
-        s.client.send(index(id))
+    else:
+      s.client.send(http401Page)
+  else:
+    if s.path.match(re"^\/\w{8}$"):
+      let topicID = s.path[1..8]
+      # 检查主题是否存在
+      let check = db.getValue(sql"SELECT id FROM topic WHERE id=?", topicID)
+      if check == "":
+        s.client.send(http404Page)
       else:
-        s.client.send("\n")
-        s.client.send(index())
-    of "/oauth/github":
-      let code = parseUrlQuery(s.query)["code"]
-      s.client.send(githubOAuth(code))
-    of "/logout":
-      let
-        cookies = parseCookies(s.headers["Cookie"])
-        id = cookies["id"]
-        session = cookies["session"]
-
-      discard checkSession(id, session)
-      s.client.send("HTTP/1.1 302 OK\n" &
-                    "Location: /")
-    of "/new":
-      let
-        cookies = parseCookies(s.headers["Cookie"])
-        id = cookies["id"]
-        session = cookies["session"]
-
-      if checkSession(id, session):
-        s.client.send("HTTP/1.1 200 OK\n" &
-                      "Content-Type: text/html\n")
-        s.client.send(updataSession(id))
-        s.client.send("\n")
-
-        case s.reqMethod
-        of "GET":
-          s.client.send(newTopic(id))
-        of "POST":
-          s.client.send(newTopic(id, s.body))
-        else: discard
-
-      else:
-        s.client.send(http401Page)
+        s.client.send("HTTP/1.1 200 OK\n")
+        if checkSession(id, session):
+          s.client.send(updataSession(id))
+          s.client.send("\n")
+          s.client.send(getTopic(id, topicID))
+        else:
+          s.client.send("\n")
+          s.client.send(getTopic("", topicID))
     else:
       const staticDir = "public"
       var file: string
