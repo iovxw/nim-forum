@@ -15,6 +15,7 @@
 import sockets, httpserver, httpclient, threadpool, os, strtabs,
   json, md5, times, strutils, db_sqlite, math, cookies
 import htmlgen, strplus
+import midnight_dynamite
 
 const
   clientID = "7e34977a09b773585ca7"
@@ -227,6 +228,10 @@ proc newTopic(id, data: string): string =
       else:
         preview = body
 
+      var mdParams = initMdParams()
+      let bodyHtml = mdParams.render(body)
+      mdParams.free()
+
       db.exec(sql"""
         INSERT INTO topic (id,      title, preview)
         VALUES            (?,       ?,     ?)""",
@@ -234,7 +239,7 @@ proc newTopic(id, data: string): string =
       db.exec(sql"""
         INSERT INTO post (topic,   author, content, type)
         VALUES           (?,       ?,      ?,       ?)""",
-                          topicID, id,     body,    0)
+                          topicID, id,     bodyHtml,    0)
       for tag in tags:
         db.exec(sql"INSERT INTO tag VALUES (?, ?)", topicID, tag)
 
@@ -372,6 +377,7 @@ proc handleRequest(s: TServer) =
           s.client.send(newTopic(id))
         of "POST":
           s.client.send(newTopic(id, s.body))
+        else: discard
 
       else:
         s.client.send(http401Page)
@@ -388,7 +394,7 @@ proc handleRequest(s: TServer) =
 
   s.client.close()
 
-var s: TServer
+var s {.threadvar.}: TServer
 s.open(Port(5000))
 echo("httpserver running on port: ", s.port)
 while true:

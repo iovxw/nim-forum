@@ -80,7 +80,7 @@ proc toInt(c: char): int8 =
   of 'x': return 33
   of 'y': return 34
   of 'z': return 35
-  else: return -1
+  else: discard
 
 proc addOne(c: char): char =
   return (c.toInt()+1).toChr()
