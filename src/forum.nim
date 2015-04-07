@@ -13,9 +13,9 @@
 #   limitations under the License.
 
 import sockets, httpserver, httpclient, threadpool, os, strtabs,
-  json, md5, times, strutils, db_sqlite, math, cookies
+  json, md5, times, strutils, db_sqlite, math, cookies,
+  packages/docutils/rstgen
 import htmlgen, strplus
-import midnight_dynamite
 
 const
   clientID = "7e34977a09b773585ca7"
@@ -228,9 +228,8 @@ proc newTopic(id, data: string): string =
       else:
         preview = body
 
-      var mdParams = initMdParams()
-      let bodyHtml = mdParams.render(body)
-      mdParams.free()
+      let bodyHtml = rstToHtml(body, {},
+        newStringTable(modeStyleInsensitive))
 
       db.exec(sql"""
         INSERT INTO topic (id,      title, preview)
