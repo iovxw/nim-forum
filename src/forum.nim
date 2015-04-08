@@ -135,9 +135,11 @@ proc index(id = ""): string =
   var topics = ""
   let t = db.getAllRows(sql"SELECT id, title, preview FROM topic ORDER BY modified DESC")
   for topic in t:
-    let id = topic[0]
-    let title = topic[1]
-    let preview = topic[2]
+    let
+      id      = topic[0]
+      title   = topic[1]
+      preview = topic[2]
+
     topics.add a(href="/"&id, class="list-group-item",
       h4(class="list-group-item-heading", title),
       p(class="list-group-item-text", 
@@ -211,16 +213,18 @@ proc newTopic(id: string): string =
 proc newTopic(id, data: string): string =
   try:
     let
-      d = parseJson(data)
+      d     = parseJson(data)
       title = d["title"].str
-      body = d["body"].str
-      tags = split(d["tag"].str)
+      body  = d["body"].str
+      tags  = split(d["tag"].str)
+
     # 判断内容合法性
     if title.len >= 5 and title.len <= 20 and tags.len > 0:
       let
         # 上一个主题的ID
         lastTopic = db.getValue(sql"SELECT lastTopic FROM config")
-        topicID = lastTopic.addOne()
+        topicID   = lastTopic.addOne()
+
       var preview: string
 
       if body.len > 50:
@@ -249,8 +253,20 @@ proc newTopic(id, data: string): string =
   except:
     return "PARSE ERROR"
 
-proc getTopic(userID, topicID): string =
-  let topic = db.getRow(sql"SELECT * FROM post WHERE type = 0")
+proc getTopic(userID="", title="", views="", topicID: string): string =
+  let rows = db.getAllRows(sql"""SELECT
+    author, content, xx, oo, creation, type
+    FROM post WHERE topic = ?""", topicID)
+  for row in rows:
+    let
+      author   = row[0]
+      content  = row[1]
+      xx       = row[2]
+      oo       = row[3]
+      creation = row[4]
+      tType    = row[5]
+
+    echo row
   # TODO: 完成主题内容页。post 的 type 0代表帖子主题，1代表附言，2代表回复
   return pageTmpl("", "body")
 
@@ -261,10 +277,11 @@ proc daysForward(days: int): TimeInfo =
   return Time(days.toDay()).getGMTime()
 
 proc updataSession(id: string): string =
-  let session = randomStr(32)
+  let
+    session = randomStr(32)
+    time    = 30.toDay()
+    dir     = "session"/session[0..1]
 
-  let time = 30.toDay()
-  let dir = "session"/session[0..1]
   if not dirExists(dir): createDir(dir)
   writeFile(dir/session, id & " " & intToStr(time))
 
@@ -313,9 +330,9 @@ proc githubOAuth(code: string): string =
 
   let
     userData = parseJson(j)
-    id = userData["login"].str
-    name = userData["name"].str
-    avatar = userData["avatar_url"].str
+    id       = userData["login"].str
+    name     = userData["name"].str
+    avatar   = userData["avatar_url"].str
 
   result = ("HTTP/1.1 200 OK\n" &
             "Content-Type: text/html\n")
@@ -336,8 +353,9 @@ proc handleRequest(s: TServer) =
   echo(s.ip, " ", s.reqMethod, " ", s.path)
   let
     cookies = parseCookies(s.headers["Cookie"])
-    id = cookies["id"]
+    id      = cookies["id"]
     session = cookies["session"]
+
   case s.path
   of "/":
     s.client.send("HTTP/1.1 200 OK\n" &
@@ -375,20 +393,26 @@ proc handleRequest(s: TServer) =
       s.client.send(http401Page)
   else:
     if s.path.match(re"^\/\w{8}$"):
-      let topicID = s.path[1..8]
-      # 检查主题是否存在
-      let check = db.getValue(sql"SELECT id FROM topic WHERE id=?", topicID)
-      if check == "":
+      let
+        topicID = s.path[1..8]
+        data    = db.getRow(sql"SELECT title, views FROM topic WHERE id=?", topicID)
+
+      if data[0] == "":
+        # 文章不存在
         s.client.send(http404Page)
       else:
+        # 查看数量 +1
+        let views = parseInt(data[1]) + 1
+        db.exec(sql"UPDATE topic SET views = ? WHERE id = ?", views, topicID)
         s.client.send("HTTP/1.1 200 OK\n")
         if checkSession(id, session):
           s.client.send(updataSession(id))
           s.client.send("\n")
-          s.client.send(getTopic(id, topicID))
+          s.client.send(getTopic(userID=id, title=data[0],
+                                 views=intToStr(views), topicID=topicID))
         else:
           s.client.send("\n")
-          s.client.send(getTopic("", topicID))
+          s.client.send(getTopic(topicID=topicID))
     else:
       const staticDir = "public"
       var file: string
