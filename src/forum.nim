@@ -176,8 +176,8 @@ proc index(id = ""): string =
             `div`(class="panel-body",
               "Panel content")),
           a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题")),
-          `div`(class="well well-sm",
-            pagination)))
+        `div`(class="well well-sm",
+          pagination)))
 
   return pageTmpl("Nim Forum —— 首页", body)
 
@@ -257,7 +257,7 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
   let rows = db.getAllRows(sql"""SELECT
     author, content, xx, oo, creation, type
     FROM post WHERE topic = ?""", topicID)
-  var content, append, reply = ""
+  var content, append, reply, authorInfo = ""
   for row in rows:
     let
       author   = row[0]
@@ -269,7 +269,16 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
 
     case tType
     of "0":
-      echo "content"
+      let info = db.getRow(sql"""SELECT
+        name, avatar, description
+        FROM user WHERE id = ?""", author)
+      authorInfo = `div`(class="panel panel-default",
+                      `div`(class="panel-body",
+                        img(src=info[1], height="50%", alt=author),
+                        h2(info[0]),
+                        p("@"&author),
+                        hr(),
+                        p(info[2])))
     of "1":
       echo "append"
     of "2":
@@ -287,14 +296,14 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
     `div`(class="container",
       `div`(class="col-sm-8",
         `div`(class="list-group well well-sm",
+          h2(title),
+          hr(),
           content,
           append,
           reply)),
       `div`(class="col-sm-4",
         `div`(class="well well-sm",
-          `div`(class="panel panel-default",
-            `div`(class="panel-body",
-              "Panel content")),
+          authorInfo,
           `div`(class="panel panel-primary",
             `div`(class="panel-heading",
               h3(class="panel-title", "Panel primary")),
@@ -311,8 +320,8 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
             `div`(class="panel-body",
               "Panel content")),
           a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题")),
-          `div`(class="well well-sm",
-            pagination)))
+        `div`(class="well well-sm",
+          pagination)))
 
   return pageTmpl(title & " —— Nim Forum", body)
 
