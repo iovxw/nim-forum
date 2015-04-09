@@ -257,6 +257,7 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
   let rows = db.getAllRows(sql"""SELECT
     author, content, xx, oo, creation, type
     FROM post WHERE topic = ?""", topicID)
+  var content, append, reply = ""
   for row in rows:
     let
       author   = row[0]
@@ -266,9 +267,54 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
       creation = row[4]
       tType    = row[5]
 
+    case tType
+    of "0":
+      echo "content"
+    of "1":
+      echo "append"
+    of "2":
+      echo "reply"
+    else:
+      discard
     echo row
-  # TODO: 完成主题内容页。post 的 type 0代表帖子主题，1代表附言，2代表回复
-  return pageTmpl("", "body")
+
+  let pagination = ul(class="pager",
+    li(class="previous disabled", a("← Newer")),
+    li(class="next", a("Older →")))
+
+  let body = navBar(userID) &
+    loginBox(userID) &
+    `div`(class="container",
+      `div`(class="col-sm-8",
+        `div`(class="list-group well well-sm",
+          content,
+          append,
+          reply)),
+      `div`(class="col-sm-4",
+        `div`(class="well well-sm",
+          `div`(class="panel panel-default",
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-primary",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "Panel primary")),
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-success",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "Panel success")),
+            `div`(class="panel-body",
+              "Panel content")),
+          `div`(class="panel panel-warning",
+            `div`(class="panel-heading",
+              h3(class="panel-title", "Panel warning")),
+            `div`(class="panel-body",
+              "Panel content")),
+          a(id="new", href="/new", class="btn btn-success btn-block", "创建新主题")),
+          `div`(class="well well-sm",
+            pagination)))
+
+  return pageTmpl(title & " —— Nim Forum", body)
 
 proc toDay(days: int): int =
   return int(getTime()) + days * (60 * 60 * 24)
