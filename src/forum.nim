@@ -253,11 +253,18 @@ proc newTopic(id, data: string): string =
   except:
     return "PARSE ERROR"
 
-proc getTopic(userID="", title="", views="", topicID: string): string =
-  let rows = db.getAllRows(sql"""SELECT
-    author, content, xx, oo, creation, type
-    FROM post WHERE topic = ?""", topicID)
-  var content, append, reply, authorInfo = ""
+proc getTopic(userID="", title, views, topicID: string): string =
+  let
+    rows = db.getAllRows(sql"""SELECT
+      author, content, xx, oo, creation, type
+      FROM post WHERE topic = ?""", topicID)
+    tags = db.getAllRows(sql"SELECT tag FROM tag WHERE topic = ?", topicID)
+
+  var tagsHtml = ""
+  for tag in tags:
+    tagsHtml.add(span(class="label label-primary", tag[0]))
+
+  var tContent, append, reply, authorInfo = ""
   for row in rows:
     let
       author   = row[0]
@@ -279,13 +286,24 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
                         p("@"&author),
                         hr(),
                         p(info[2])))
+      tContent = `div`(
+                    h1(title),
+                    `div`(class="topic-bar",
+                      a("点击: "&views),
+                      a("发帖时间: "&creation)),
+                    hr(),
+                    content,
+                    `div`(class="topic-bar",
+                      a("oo ["&oo&"]"),
+                      a("xx ["&xx&"]")),
+                    hr(),
+                    tagsHtml)
     of "1":
       echo "append"
     of "2":
       echo "reply"
     else:
       discard
-    echo row
 
   let pagination = ul(class="pager",
     li(class="previous disabled", a("← Newer")),
@@ -296,9 +314,7 @@ proc getTopic(userID="", title="", views="", topicID: string): string =
     `div`(class="container",
       `div`(class="col-sm-8",
         `div`(class="list-group well well-sm",
-          h2(title),
-          hr(),
-          content,
+          tContent,
           append,
           reply)),
       `div`(class="col-sm-4",
@@ -467,7 +483,7 @@ proc handleRequest(s: TServer) =
                                  views=intToStr(views), topicID=topicID))
         else:
           s.client.send("\n")
-          s.client.send(getTopic(topicID=topicID))
+          s.client.send(getTopic(title=data[0], views=intToStr(views), topicID=topicID))
     else:
       const staticDir = "public"
       var file: string

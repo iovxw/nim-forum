@@ -49,3 +49,11 @@
 .panel:last-child {
   margin-bottom: 0;
 }
+
+.topic-bar {
+  float: right;
+}
+
+.topic-bar a {
+  margin-left: 10px;
+}
